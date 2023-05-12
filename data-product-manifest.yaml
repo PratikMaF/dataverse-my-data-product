@@ -1,17 +1,17 @@
 ---
 version: 0.0.1
 discoveryPort:
-  name: My Data Product 1
-  alias: Test_schedule_run
+  name: My Data Product 11
+  alias: my_dp_11
   shortDescription: Weather Forecast of the next 7 days for ahmedabad city
   longDescription: Weather Forecast of the next 7 days for ahmedabad city along with the accuracy of the previous forecast
   tags:
     - MAF Data
     - Schedule Run
   versionInformation: '0.1'
-  urn: urn:dv:dataproduct:6d4714c4
+  urn: urn:dv:dataproduct:6d3514c4
   organization: MAF
-  createdBy: Ajay
+  createdBy: Me
   createdOn: '212249844399'
   fromMinDataDate: '2022-04-07'
   toMaxDataDate: '2022-04-14'
