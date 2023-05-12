@@ -1,32 +1,62 @@
 ---
 version: 0.0.1
 discoveryPort:
-  name: Data Product Schedule test - append method
-  description: Creating the base table
+  name: Schedule run DQ checks
+  alias: Test_schedule_run
+  shortDescription: Weather Forecast of the next 7 days for ahmedabad city
+  longDescription: Weather Forecast of the next 7 days for ahmedabad city along with the accuracy of the previous forecast
+  tags:
+    - MAF Data
+    - Schedule Run
+  versionInformation: '0.1'
+  urn: urn:dv:dataproduct:6d4714c4
+  organization: MAF
+  createdBy: Ajay
+  createdOn: '212249844399'
+  fromMinDataDate: '2022-04-07'
+  toMaxDataDate: '2022-04-14'
+  lastUpdated: '2022-04-07'
+  refreshFrequency: Daily
+  industryDomain: Meteorology
+  function: Forecast
+  regulatoryFields:
+    privacy-PublicOrPrivate: Public
+    customerSpecific-PIIOrnonPII: non-PII
+    origin-MachineGeneratedOrHumanGenerated: Machine generated
+    monetary-FinancialOrnoFinancialData: non-financial
+  qualityInformation:
+    dataAccuracy: 95%
+  authorisation-Information:
+    organization: MAF, Accenture
+    geography:
+      type: state
+      value: Bengaluru
+    industryDomain:
+    - Meteorology , Weather
+    refreshInterval: Daily
+    typeofAuthorisation-InclusionExclusion: Inclusion
   category: customer
   image: http://google.com
   autofillUserinfo: true
-  tags:
-    - Madrid
-    - House Rental
   extra: {}
 inputPorts:
-  - alias: Test0001_input_port
+  - alias: Test_input_port
     description: string
     tags: []
     extra: {}
     syncType: pull
     type: s3
-    sourceUrn: urn:dv:datasource:8dfdcd8d-0c79-45f8-8186-aa79e159b757
+    dataSetUrn: urn:dv:dataset:f1c142fb-a87b-4a36-8fb7-d66a7cb31337
     entityId:
-      alias: Test0001
       createEntity: true
       entityName: test_scd2.csv
-      type: s3-bucket
-      entityPath: s3://dataverse-byte/sample-data/inputData/test_scd2.csv
+      entityPath: s3://dp-input-bucket/mpay-tx/mpay-tx.csv
       entityFilterPatternMatch: "*.csv"
       sourceSchemaUrn: urn:dv:schema:9d4716d4
       projectSchemaUrn: urn:dv:schema:9d4716d6
+      entityVariables:
+        - key: timeStamp
+          value: date-YYYYMMdd
       fileFormat: csv
       delimiter: ","
       header: true
@@ -41,8 +71,8 @@ inputPorts:
         - marks
         - modified
 stateManagement:
-  alias: Test0001
-  refreshInterval: 0/15 * * * *
+  alias: Test0001_input_port
+  refreshInterval: "*/10 * * * *"
   updateStrategy: append
   productStoreState:
     logicalSchema:
@@ -53,23 +83,19 @@ stateManagement:
           description: ID of the property
         name:
           type: String
-        subject:
-          type: String
-        stream:
-          type: String
         marks:
           type: number
         modified:
-          type: string
+          type: datetime
           description: To store the creation date
       required:
         - id
-    retentionVersions: "10"
+  retentionVersions: "10"
   updateStrategyOptions:
-      uniqueKeyColumns:
-        - id
-      changeTrackColumns:
-        - modified
+    uniqueKeyColumns:
+      - id
+    changeTrackColumns:
+      - modified
 transformation:
   sql: SELECT * FROM Test0001
 outputPort:
@@ -78,3 +104,89 @@ outputPort:
       queryType: SQL
     - channelType: JDBC
       queryType: SQL
+dataQualityCheck:
+  RecordCountCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        expression: ">="
+        number: 100
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      expression: ==
+      number: 100
+  NullValueCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        checks:
+          - column: amount
+            expression: ">="
+            number: 9
+          - column: payment_option
+            expression: ">="
+            number: 8
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      checks:
+        - column: amount
+          expression: ">="
+          number: 0.9
+  NullCombinationCheck:
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      checks:
+        - columns:
+            - transaction_reference
+            - order_reference
+          expression: ">="
+          number: 0.99
+  UnacceptableTextValueCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        checks:
+          - column: payment_option
+            valueList:
+              - VISA
+              - MASTERCARD
+            number: 0.95
+            expression: ">="
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      checks:
+        - column: payment_option
+          valueList:
+            - MASTERCARD
+            - VISA
+          number: 0.9
+          expression: ">="
+  UniquenessCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        checks:
+          - column: store_group_name
+          - column: store_name
+  UniqueCombinationCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        checks:
+          - columns:
+              - store_name
+              - transaction_Reference
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      checks:
+        - columns:
+            - store_name
+            - transaction_Reference
+  DistinctValueCountCheck:
+    inputPort:
+      - referenceAlias: Test_input_port
+        checks:
+          - column: payment_option
+            number: 2
+            expression: "<="
+    stateManagement:
+      referenceAlias: Test0001_input_port
+      checks:
+        - column: payment_option
+          number: 2
+          expression: "<="
